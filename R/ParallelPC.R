@@ -4,15 +4,7 @@
 ### Please cite the following paper when using the code
 ### Paper: A fast PC algorithm for high dimensional causal discovery with multi-core PCs
 #########################################################################################
-#install.packages("bnlearn")
-#source("http://cran.rstudio.com/src/contrib/bnlearn_3.8.tar.gz")
-#install.packages("bnlearn")
-#source("http://bioconductor.org/biocLite.R")
-#biocLite("Rgraphviz")
-# library(bnlearn)
-# library(pcalg)
-# library(parallel)
-# library(Rgraphviz)
+
 
 if(getRversion() >= "2.15.1")  utils::globalVariables(c("gaussCItest","idaFast","detectCores","makeCluster","clusterEvalQ","stopCluster","pc.cons.intern","pdsep","udag2pag","udag2pdag","udag2pdagSpecial","udag2pdagRelaxed","rfci.vStruc","udag2apag","getNextSet","clusterApply","clusterSplit","mclapply","getNextSet","find.unsh.triple"))
 #' Estimate (Initial) Skeleton of a DAG using the PC_stable Algorithm
@@ -387,7 +379,22 @@ skeleton_parallel <- function(suffStat, indepTest, alpha, labels, p,
     res
   }
   
-  total_mem <- function() {
+#   total_mem <- function() {
+#     if (Sys.info()[["sysname"]] == "Linux") {
+#       total <- (as.numeric(gsub("[^0-9]*([0-9]*)", "\\1", system("egrep '^MemFree:' /proc/meminfo", intern = TRUE))) + as.numeric(gsub("[^0-9]*([0-9]*)", "\\1", system("egrep '^Cached:' /proc/meminfo", intern = TRUE))) + as.numeric(gsub("[^0-9]*([0-9]*)", "\\1", system("egrep '^Inactive:' /proc/meminfo", intern = TRUE))) + as.numeric(gsub("[^0-9]*([0-9]*)", "\\1", system("egrep '^Buffers:' /proc/meminfo", intern = TRUE))))/1000
+#       return(total)
+#     } else if (Sys.info()[["sysname"]] == "Windows") {
+#       #total <- as.numeric(memory.limit())
+#       total <- (as.numeric(gsub("[^0-9]*([0-9]*)", "\\1", system("wmic OS get FreePhysicalMemory /Value", intern=TRUE))[3]))/1000
+#       return(total)
+#     } else { # Mac OS X
+#       total <- 4096*(as.numeric(gsub("[^0-9]*([0-9]*)", "\\1", system("vm_stat | grep 'Pages free'", intern = TRUE))) + as.numeric(gsub("[^0-9]*([0-9]*)", "\\1", system("vm_stat | grep 'Pages inactive'", intern = TRUE))) + as.numeric(gsub("[^0-9]*([0-9]*)", "\\1", system("vm_stat | grep 'Pages speculative'", intern = TRUE))) + as.numeric(gsub("[^0-9]*([0-9]*)", "\\1", system("vm_stat | grep 'Pages purgeable'", intern = TRUE))))/1000000
+#       return(total)
+#     }
+#   }
+  
+total_mem <- function() {
+  tryCatch({
     if (Sys.info()[["sysname"]] == "Linux") {
       total <- (as.numeric(gsub("[^0-9]*([0-9]*)", "\\1", system("egrep '^MemFree:' /proc/meminfo", intern = TRUE))) + as.numeric(gsub("[^0-9]*([0-9]*)", "\\1", system("egrep '^Cached:' /proc/meminfo", intern = TRUE))) + as.numeric(gsub("[^0-9]*([0-9]*)", "\\1", system("egrep '^Inactive:' /proc/meminfo", intern = TRUE))) + as.numeric(gsub("[^0-9]*([0-9]*)", "\\1", system("egrep '^Buffers:' /proc/meminfo", intern = TRUE))))/1000
       return(total)
@@ -395,12 +402,21 @@ skeleton_parallel <- function(suffStat, indepTest, alpha, labels, p,
       #total <- as.numeric(memory.limit())
       total <- (as.numeric(gsub("[^0-9]*([0-9]*)", "\\1", system("wmic OS get FreePhysicalMemory /Value", intern=TRUE))[3]))/1000
       return(total)
-    } else { # Mac OS X
+    } else if (Sys.info()[["sysname"]] == "Darwin") { # Mac OS X
       total <- 4096*(as.numeric(gsub("[^0-9]*([0-9]*)", "\\1", system("vm_stat | grep 'Pages free'", intern = TRUE))) + as.numeric(gsub("[^0-9]*([0-9]*)", "\\1", system("vm_stat | grep 'Pages inactive'", intern = TRUE))) + as.numeric(gsub("[^0-9]*([0-9]*)", "\\1", system("vm_stat | grep 'Pages speculative'", intern = TRUE))) + as.numeric(gsub("[^0-9]*([0-9]*)", "\\1", system("vm_stat | grep 'Pages purgeable'", intern = TRUE))))/1000000
       return(total)
     }
-  }
-  
+    else { # other OS, i.e. Solaris
+      total <- (as.numeric(gsub("[^0-9]*([0-9]*)", "\\1", system("vmstat -s | grep 'free memory'", intern = TRUE))) + as.numeric(gsub("[^0-9]*([0-9]*)", "\\1", system("vmstat -s | grep 'inactive memory'", intern = TRUE))) + as.numeric(gsub("[^0-9]*([0-9]*)", "\\1", system("vmstat -s | grep 'buffer memory'", intern = TRUE))) + as.numeric(gsub("[^0-9]*([0-9]*)", "\\1", system("vmstat -s | grep 'swap cache'", intern = TRUE))))/1000
+      return(total)
+    }
+  }, error=function(e){
+    return(1024)
+  }, warning=function(e){
+    return(1024)
+  })
+}
+
   parallel_threshold <- 100
   if (mem.efficient) {
     mem_per_test <- 2 #MB
@@ -2275,7 +2291,21 @@ pcSelect_parallel <- function(y,dm,method = c("parallel"),
     res
   }
   ###############################################
-  total_mem <- function() {
+#   total_mem <- function() {
+#     if (Sys.info()[["sysname"]] == "Linux") {
+#       total <- (as.numeric(gsub("[^0-9]*([0-9]*)", "\\1", system("egrep '^MemFree:' /proc/meminfo", intern = TRUE))) + as.numeric(gsub("[^0-9]*([0-9]*)", "\\1", system("egrep '^Cached:' /proc/meminfo", intern = TRUE))) + as.numeric(gsub("[^0-9]*([0-9]*)", "\\1", system("egrep '^Inactive:' /proc/meminfo", intern = TRUE))) + as.numeric(gsub("[^0-9]*([0-9]*)", "\\1", system("egrep '^Buffers:' /proc/meminfo", intern = TRUE))))/1000
+#       return(total)
+#     } else if (Sys.info()[["sysname"]] == "Windows") {
+#       #total <- as.numeric(memory.limit())
+#       total <- (as.numeric(gsub("[^0-9]*([0-9]*)", "\\1", system("wmic OS get FreePhysicalMemory /Value", intern=TRUE))[3]))/1000
+#       return(total)
+#     } else { # Mac OS X
+#       total <- 4096*(as.numeric(gsub("[^0-9]*([0-9]*)", "\\1", system("vm_stat | grep 'Pages free'", intern = TRUE))) + as.numeric(gsub("[^0-9]*([0-9]*)", "\\1", system("vm_stat | grep 'Pages inactive'", intern = TRUE))) + as.numeric(gsub("[^0-9]*([0-9]*)", "\\1", system("vm_stat | grep 'Pages speculative'", intern = TRUE))) + as.numeric(gsub("[^0-9]*([0-9]*)", "\\1", system("vm_stat | grep 'Pages purgeable'", intern = TRUE))))/1000000
+#       return(total)
+#     }
+#   }
+total_mem <- function() {
+  tryCatch({
     if (Sys.info()[["sysname"]] == "Linux") {
       total <- (as.numeric(gsub("[^0-9]*([0-9]*)", "\\1", system("egrep '^MemFree:' /proc/meminfo", intern = TRUE))) + as.numeric(gsub("[^0-9]*([0-9]*)", "\\1", system("egrep '^Cached:' /proc/meminfo", intern = TRUE))) + as.numeric(gsub("[^0-9]*([0-9]*)", "\\1", system("egrep '^Inactive:' /proc/meminfo", intern = TRUE))) + as.numeric(gsub("[^0-9]*([0-9]*)", "\\1", system("egrep '^Buffers:' /proc/meminfo", intern = TRUE))))/1000
       return(total)
@@ -2283,11 +2313,20 @@ pcSelect_parallel <- function(y,dm,method = c("parallel"),
       #total <- as.numeric(memory.limit())
       total <- (as.numeric(gsub("[^0-9]*([0-9]*)", "\\1", system("wmic OS get FreePhysicalMemory /Value", intern=TRUE))[3]))/1000
       return(total)
-    } else { # Mac OS X
+    } else if (Sys.info()[["sysname"]] == "Darwin") { # Mac OS X
       total <- 4096*(as.numeric(gsub("[^0-9]*([0-9]*)", "\\1", system("vm_stat | grep 'Pages free'", intern = TRUE))) + as.numeric(gsub("[^0-9]*([0-9]*)", "\\1", system("vm_stat | grep 'Pages inactive'", intern = TRUE))) + as.numeric(gsub("[^0-9]*([0-9]*)", "\\1", system("vm_stat | grep 'Pages speculative'", intern = TRUE))) + as.numeric(gsub("[^0-9]*([0-9]*)", "\\1", system("vm_stat | grep 'Pages purgeable'", intern = TRUE))))/1000000
       return(total)
     }
-  }
+    else { # other OS, i.e. Solaris
+      total <- (as.numeric(gsub("[^0-9]*([0-9]*)", "\\1", system("vmstat -s | grep 'free memory'", intern = TRUE))) + as.numeric(gsub("[^0-9]*([0-9]*)", "\\1", system("vmstat -s | grep 'inactive memory'", intern = TRUE))) + as.numeric(gsub("[^0-9]*([0-9]*)", "\\1", system("vmstat -s | grep 'buffer memory'", intern = TRUE))) + as.numeric(gsub("[^0-9]*([0-9]*)", "\\1", system("vmstat -s | grep 'swap cache'", intern = TRUE))))/1000
+      return(total)
+    }
+  }, error=function(e){
+    return(1024)
+  }, warning=function(e){
+    return(1024)
+  })
+}
   ###############################################
   print("-----pepare to parallel------")
   parallel_threshold <- 4   # what is this ?
